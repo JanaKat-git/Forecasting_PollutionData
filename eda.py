@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.linear_model import LinearRegression
 
+
 'Prediction CO'
 
 #read data
@@ -63,8 +64,32 @@ Xtrend = df_train[['timestep']]
 m = LinearRegression()
 m.fit(Xtrend, y_CO)
 
-df_train['trend'] = m.predict(Xtrend)
+X_CO['trend'] = m.predict(Xtrend)
 plt.figure(figsize=(20,15))
 plt.plot(df_train.index, df_train['target_carbon_monoxide'])
-plt.plot(df_train.index, df_train['trend'])
+plt.plot(df_train.index, X_CO['trend'])
+
+#Analyze Seasonality
+X_CO['day'] = X_CO.index.day
+seasonal_dummies = pd.get_dummies(X_CO['day'], prefix='day', drop_first=True)
+
+X_CO = X_CO.merge(seasonal_dummies, left_index = True, right_index = True)
+Xseason = X_CO.drop(['sensor_1','sensor_2','sensor_3','sensor_4','sensor_5','h','trend'],axis=1)
+m_season = LinearRegression()
+m_season.fit(Xseason, y_CO)
+
+X_CO['seasonANDtrend'] = m_season.predict(Xseason)
+
+plt.figure(figsize=(20,15))
+plt.plot(df_train.index, df_train['target_carbon_monoxide'])
+plt.plot(df_train.index, X_CO['seasonANDtrend'])
+
+#Analyze Remainder
+
+X_CO['remainder'] = df_train['target_carbon_monoxide'] - X_CO['seasonANDtrend']
+plt.figure(figsize=(20,15))
+plt.plot(df_train.index, X_CO['remainder'])
+plt.plot(df_train.index, df_train['target_carbon_monoxide'], alpha=0.5)
+plt.legend(['remainder','CO'])
+
 
